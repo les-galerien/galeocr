@@ -1,0 +1,9 @@
+virtualenv -p python3 .venv
+source .venv/bin/activate
+pip install flask
+pip install Flask-RESTful
+pip install marshmallow
+pip install requests
+pip install opencv-python
+pip install mltu
+pip freeze > requirements.txt
