@@ -1,16 +1,14 @@
 import os
 from flask import Flask, request
 from flask_restful import Api, Resource
-from marshmallow.exceptions import ValidationError
 from inferenceModel import predict
 from werkzeug.utils import secure_filename
-from utils import allowed_file
+from utils import allowed_file, convert
 
 app = Flask(__name__)
 api = Api(app)
 
 DEBUG = True
-UPLOAD_FOLDER = "./temp/"
 
 
 class ImageRecognizer(Resource):
@@ -20,20 +18,22 @@ class ImageRecognizer(Resource):
         if not file or not allowed_file(file.filename):
             return {"error": "Invalid content"}, 400
 
-        isExist = os.path.exists(UPLOAD_FOLDER)
+        isExist = os.path.exists("./temp/")
         if not isExist:
-            os.makedirs(UPLOAD_FOLDER)
+            os.makedirs("./temp/")
 
         filename = secure_filename(file.filename)
-        path = os.path.join(UPLOAD_FOLDER, filename)
+        paths = [os.path.join("./temp/", filename)]
 
-        file.save(path)
+        file.save(paths[0])
 
-        prediction = predict(path)
+        if file.filename.rsplit(".", 1)[1].lower() == "gif":
+            paths.append(convert(filename))
 
+        prediction = predict(paths[-1])
+
+        [os.remove(one) for one in paths]
         file.close()
-        os.remove(path)
-
         return prediction
 
 
