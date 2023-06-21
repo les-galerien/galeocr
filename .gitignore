@@ -2,3 +2,5 @@ Datasets/
 Models/
 .venv
 temp
+__pycache__
+.vscode
