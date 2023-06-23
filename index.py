@@ -3,7 +3,8 @@ from flask import Flask, request
 from flask_restful import Api, Resource
 from inferenceModel import predict
 from werkzeug.utils import secure_filename
-from utils import allowed_file, convert
+from utils import allowed_file, convert, get_extension
+import requests
 
 app = Flask(__name__)
 api = Api(app)
@@ -13,27 +14,31 @@ DEBUG = True
 
 class ImageRecognizer(Resource):
     def post(self):
-        file = request.files.get("file")
+        file = request.json.get("url")
 
-        if not file or not allowed_file(file.filename):
+        if not file or not allowed_file(file):
             return {"error": "Invalid content"}, 400
 
-        isExist = os.path.exists("./temp/")
-        if not isExist:
-            os.makedirs("./temp/")
+        owned_file = requests.get(file)
+        new_name = f"./temp/temporary.{get_extension(file)}"
 
-        filename = secure_filename(file.filename)
-        paths = [os.path.join("./temp/", filename)]
+        with open(new_name, "wb") as f:
+            f.write(owned_file.content)
 
-        file.save(paths[0])
+            isExist = os.path.exists("./temp/")
+            if not isExist:
+                os.makedirs("./temp/")
 
-        if file.filename.rsplit(".", 1)[1].lower() == "gif":
-            paths.append(convert(filename))
+            paths = [new_name]
 
-        prediction = predict(paths[-1])
+            if new_name.rsplit(".", 1)[1].lower() == "gif":
+                paths.append(convert(f))
 
-        [os.remove(one) for one in paths]
-        file.close()
+            print(paths[-1])
+            prediction = predict(paths[-1])
+
+            [os.remove(one) for one in paths]
+
         return prediction
 
 
